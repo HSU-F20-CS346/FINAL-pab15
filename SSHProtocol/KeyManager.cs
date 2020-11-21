@@ -12,9 +12,10 @@ namespace SSHProtocol
         public BigInteger PublicKeyP { get; set; }
         public BigInteger PublicKeyG { get; set; }
         public BigInteger UserPrivateKey { get; set; }
-        public BigInteger PublicGenratedKey { get; set; }
+        public BigInteger PublicGeneratedKey { get; set; }
         public BigInteger HostGeneratedKey { get; set; }
         public BigInteger SharedSecretKey { get; set; }
+        public byte[] AesIV { get; set; }
         public KeyManager()
         {
 
@@ -28,7 +29,7 @@ namespace SSHProtocol
         }
         private void ComputePublicGenKeyForServer()
         {
-            PublicGenratedKey = (BigInteger.ModPow(PublicKeyG, UserPrivateKey, PublicKeyP));
+            PublicGeneratedKey = (BigInteger.ModPow(PublicKeyG, UserPrivateKey, PublicKeyP));
         }
         public void ComputeSharedKey()
         {
@@ -52,6 +53,51 @@ namespace SSHProtocol
                 hex.Append(hexChars[(int)(array[i] & 0xF)]);
             }
             return hex.ToString();
+        }
+
+        public byte[] Encrypt(string msg)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes(SharedSecretKey.ToString());
+                aes.IV = AesIV;
+
+                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using(StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            swEncrypt.Write(msg);
+                        }
+                        return msEncrypt.ToArray();
+                    }
+                }
+            }
+        }
+        public byte[] Decrypt(string msg)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes(SharedSecretKey.ToString());
+                aes.IV = AesIV;
+
+                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                using (MemoryStream msDecrypt = new MemoryStream())
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter swDecrypt = new StreamWriter(csDecrypt))
+                        {
+                            swDecrypt.Write(msg);
+                        }
+                        return msDecrypt.ToArray();
+                    }
+                }
+            }
         }
     }
 }
