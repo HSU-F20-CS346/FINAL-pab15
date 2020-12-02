@@ -16,6 +16,7 @@ namespace SSHProtocol
         public BigInteger HostGeneratedKey { get; set; }
         public BigInteger SharedSecretKey { get; set; }
         public byte[] AesIV { get; set; }
+        public byte[] AesResizedKey { get; set; }
         public KeyManager()
         {
 
@@ -34,6 +35,7 @@ namespace SSHProtocol
         public void ComputeSharedKey()
         {
             SharedSecretKey = (BigInteger.ModPow(HostGeneratedKey, UserPrivateKey, PublicKeyP));
+            ResizeSharedKey();
         }
         public void GenerateUserPrivateKey()
         {
@@ -54,50 +56,67 @@ namespace SSHProtocol
             }
             return hex.ToString();
         }
-
-        public byte[] Encrypt(string msg)
+        public static byte[] HexStringToByteArray(String hex)
         {
-            using (var aes = Aes.Create())
+            int NumberChars = hex.Length;
+            byte[] bytes = new byte[NumberChars / 2];
+            for (int i = 0; i < NumberChars; i += 2)
+                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+            return bytes;
+        }
+
+        public void ResizeSharedKey()
+        {
+            byte[] oldkey = Encoding.UTF8.GetBytes(SharedSecretKey.ToString());
+            if (oldkey.Length > 32)
             {
-                aes.Key = Encoding.UTF8.GetBytes(SharedSecretKey.ToString());
-                aes.IV = AesIV;
-
-                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-
-                using (MemoryStream msEncrypt = new MemoryStream())
+                byte[] newkey = new byte[32];
+                for (int i = 0; i < newkey.Length; i++)
                 {
-                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                    {
-                        using(StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                        {
-                            swEncrypt.Write(msg);
-                        }
-                        return msEncrypt.ToArray();
-                    }
+                    newkey[i] = oldkey[i];
                 }
+                AesResizedKey = newkey;
             }
         }
-        public byte[] Decrypt(string msg)
+
+        public byte[] Encrypt(byte[] msg)
         {
+            byte[] encmsg = null;
+
             using (var aes = Aes.Create())
             {
-                aes.Key = Encoding.UTF8.GetBytes(SharedSecretKey.ToString());
+                aes.BlockSize = 128;
+                aes.Key = AesResizedKey;
                 aes.IV = AesIV;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
 
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-
-                using (MemoryStream msDecrypt = new MemoryStream())
+                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
-                    {
-                        using (StreamWriter swDecrypt = new StreamWriter(csDecrypt))
-                        {
-                            swDecrypt.Write(msg);
-                        }
-                        return msDecrypt.ToArray();
-                    }
+                    encmsg = encryptor.TransformFinalBlock(msg, 0, msg.Length);
                 }
             }
+            return encmsg;
+        }
+        public byte[] Decrypt(byte[] msg)
+        {
+
+            byte[] decmsg = null;
+
+            using (var aes = Aes.Create())
+            {
+                aes.BlockSize = 128;
+                aes.Key = AesResizedKey;
+                aes.IV = AesIV;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                {
+                    decmsg = decryptor.TransformFinalBlock(msg, 0, msg.Length);
+                }
+            }
+            return decmsg;
         }
     }
 }
