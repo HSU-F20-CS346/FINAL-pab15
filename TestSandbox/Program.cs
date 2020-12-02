@@ -18,11 +18,14 @@ namespace TestSandbox
             server.HostGeneratedKey = client.PublicGeneratedKey;
             server.ComputeSharedKey();
             client.ComputeSharedKey();
-            if (server.SharedSecretKey == client.SharedSecretKey)
-            {
-                Console.WriteLine("Works");
-            }
-            else Console.WriteLine("Fails");
+            InitPacket IV = new InitPacket();
+            server.AesIV = IV.AesIV;
+            client.AesIV = IV.AesIV;
+            byte[] msg = Encoding.UTF8.GetBytes("Hello World");
+            msg = server.Encrypt(msg);
+            byte[] demsg = client.Decrypt(msg);
+            string d = Encoding.UTF8.GetString(demsg);
+            Console.WriteLine(d);
         }
     }
 }

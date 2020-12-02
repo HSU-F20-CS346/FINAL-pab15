@@ -10,7 +10,7 @@ namespace SSHProtocol
     public class InitPacket
     {
         public byte PacketValue = 00000000;
-        public int IVSize = 128;
+        public int IVSize = 16;
         public byte[] AesIV { get; set; }
 
         public InitPacket()
