@@ -81,11 +81,13 @@ namespace Server
 
                     if (Server.NonAuthenticatedUsers.ContainsKey(client.Client.RemoteEndPoint.ToString()))
                     {
-                        Server.NonAuthenticatedUsers[client.Client.RemoteEndPoint.ToString()] = ClientKeyManager;
+                        IPEndPoint UserIp = client.Client.RemoteEndPoint as IPEndPoint;
+                        Server.NonAuthenticatedUsers[UserIp.Address.ToString()] = new Tracker(ClientKeyManager);
                     }
                     else
                     {
-                        Server.NonAuthenticatedUsers.Add(client.Client.RemoteEndPoint.ToString(), ClientKeyManager);
+                        IPEndPoint UserIp = client.Client.RemoteEndPoint as IPEndPoint;
+                        Server.NonAuthenticatedUsers.Add(UserIp.Address.ToString(), new Tracker(ClientKeyManager));
                     }
                 }
                 catch (Exception ex)

@@ -50,7 +50,8 @@ namespace Server
 
                 try
                 {
-                    KeyManager ClientKeyManager = Server.NonAuthenticatedUsers[client.Client.RemoteEndPoint.ToString()];
+                    IPEndPoint UserIp = client.Client.RemoteEndPoint as IPEndPoint;
+                    KeyManager ClientKeyManager = Server.NonAuthenticatedUsers[UserIp.Address.ToString()].KeyManager;
                     BufferedStream stream = new BufferedStream(client.GetStream());
                     reader = new BinaryReader(stream);
                     writer = new BinaryWriter(stream);
@@ -62,15 +63,24 @@ namespace Server
                     // Calculate New Aes IV
 
                     // Decrypt Auth Packet Using Shared Key And Aes IV
+                    byte[] DeCyrptedAuthPacketBytes = ClientKeyManager.Decrypt(AuthPacketBytes);
+                    AuthPacket AuthPacket = new AuthPacket(DeCyrptedAuthPacketBytes);
 
-                    // Translate Bytes To and AuthPacket()
-
-                    // Get Username and Password And Validate
+                    if (AuthPacket.Username == "PeterB" && AuthPacket.Password == "Password123")
+                    {
+                        // Return Valid Login
+                        Console.WriteLine("Login Valid");
+                    }
+                    else
+                    {
+                        // Return Invalid Login
+                        Console.WriteLine("Login Failed");
+                    }
 
                 }
                 catch (Exception ex)
                 {
-                    Server.PrintMSG("Error Creating Stream...");
+                    Server.PrintMSG("Error Creating Auth Stream...");
                 }
             }
         }
