@@ -45,15 +45,12 @@ namespace Client
                     // Generate Shared Key
                     Client.Tracker.KeyManager.HostGeneratedKey = BigInteger.Parse(Encoding.UTF8.GetString(ServerKey));
                     Client.Tracker.KeyManager.ComputeSharedKey();
-                    Client.ClientMSG(Client.Tracker.KeyManager.SharedSecretKey.ToString() + "\n\n");
-
 
                     // Get Init Packet And Print To AesIV Screen
                     int PacketBytesLength = IPAddress.NetworkToHostOrder(reader.ReadInt32());
                     byte[] PacketBytes = reader.ReadBytes(PacketBytesLength);
                     InitPacket initPacket = new InitPacket(PacketBytes);
                     Client.Tracker.KeyManager.AesIV = initPacket.AesIV;
-                    Client.ClientMSG(Encoding.UTF8.GetString(initPacket.AesIV));
                     return true;
                 }
             }

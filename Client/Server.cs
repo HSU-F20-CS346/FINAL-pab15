@@ -21,7 +21,9 @@ namespace Server
         private Thread ExchangerThread = null;
         private Authenticator Authenticator { get; set; }
         private Thread AuthThread = null;
-        public Server(int _ExchangePort, int _AuthPort)
+        private Reciever Reciever { get; set; }
+        private Thread RecieverThread = null;
+        public Server(int _ExchangePort, int _AuthPort, int _RecievePort)
         {
             NonAuthenticatedUsers = new Dictionary<string, Tracker>();
             AuthenticatedUsers = new Dictionary<string, Tracker>();
@@ -31,7 +33,9 @@ namespace Server
             Authenticator = new Authenticator();
             Authenticator.Server = this;
             Authenticator.Port = _AuthPort;
-
+            Reciever = new Reciever();
+            Reciever.Server = this;
+            Reciever.Port = _RecievePort;
         }
         public void Run()
         {
@@ -41,6 +45,9 @@ namespace Server
             ThreadStart AuthThreadStart = Authenticator.Run;
             AuthThread = new Thread(AuthThreadStart);
             AuthThread.Start();
+            ThreadStart RecieverThreadStart = Reciever.Run;
+            RecieverThread = new Thread(RecieverThreadStart);
+            RecieverThread.Start();
 
         }
         public void PrintMSG(string msg)

@@ -23,8 +23,6 @@ namespace Client
 
         public void Authenticate()
         {
-            KeyValuePair<string, string> userLogin = Client.GetLogin();
-
             try
             {
                 TcpClient client = new TcpClient(DestinationAddress, Port);
@@ -33,6 +31,13 @@ namespace Client
                 {
                     BinaryReader reader = new BinaryReader(stream);
                     BinaryWriter writer = new BinaryWriter(stream);
+
+                    int ConnPacketLength = IPAddress.NetworkToHostOrder(reader.ReadInt32());
+                    byte[] ConnBytes = reader.ReadBytes(ConnPacketLength);
+                    ResponsePacket ConnPacket = new ResponsePacket(Client.Tracker.KeyManager.Decrypt(ConnBytes));
+                    Client.ClientMSG(ConnPacket.Data);
+                    
+                    KeyValuePair<string, string> userLogin = Client.GetLogin();
 
                     AuthPacket Auth = new AuthPacket(userLogin.Key, userLogin.Value);
 
@@ -43,6 +48,13 @@ namespace Client
                     writer.Flush();
 
                     // Recieve Response
+                    int ValidatorPacketLength = IPAddress.NetworkToHostOrder(reader.ReadInt32());
+                    ResponsePacket ValidatorPacket = new ResponsePacket(Client.Tracker.KeyManager.Decrypt(reader.ReadBytes(ValidatorPacketLength)));
+                    Client.ClientMSG(ValidatorPacket.Data);
+                    if (ValidatorPacket.Data == "Login Successful...")
+                    {
+                        Client.Authenticated = true;
+                    }
                 }
             }
             catch (Exception ex)

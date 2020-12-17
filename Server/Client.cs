@@ -14,6 +14,7 @@ namespace Client
         public Exchange Exchanger { get; set; }
         public Authenticator Authenticator {get; set;}
         public string DestinationAddress { get; set; }
+        public bool Authenticated { get; set; }
         public Client(string DestinationAddress, int ExchangePort, int AuthPort)
         {
             Tracker = new Tracker(new KeyManager(P, G));
@@ -21,6 +22,7 @@ namespace Client
             Authenticator = new Authenticator(DestinationAddress, AuthPort);
             Exchanger.Client = this;
             Authenticator.Client = this;
+            Authenticated = false;
         }
         public void ClientMSG(string msg)
         {
@@ -30,8 +32,21 @@ namespace Client
         {
             Console.WriteLine("Enter Your Username:");
             string username = Console.ReadLine();
-            Console.WriteLine("Enter Your Username:");
-            string password = Console.ReadLine();
+            Console.WriteLine("Enter Your Password:");
+            var password = "";
+            ConsoleKeyInfo ch = Console.ReadKey(true);
+            while(ch.Key != ConsoleKey.Enter)
+            {
+                if (ch.Key == ConsoleKey.Backspace)
+                {
+                    password = password.Substring(0, password.Length - 1);
+                }
+                else
+                {
+                    password += ch.KeyChar;
+                }
+                ch = Console.ReadKey(true);
+            }
             return new KeyValuePair<string, string>(username, password);
         }
     }
