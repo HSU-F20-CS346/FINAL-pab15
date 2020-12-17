@@ -56,6 +56,11 @@ namespace SSHProtocol
             }
             return hex.ToString();
         }
+        public void RecalculateIV(int TransmissionNum)
+        {
+            // Modify
+            AesIV = AesIV;
+        }
         public static byte[] HexStringToByteArray(String hex)
         {
             int NumberChars = hex.Length;

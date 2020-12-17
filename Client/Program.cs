@@ -15,7 +15,7 @@ namespace Server
 
         static void Main(string[] args)
         {
-            Server server = new Server(3500);
+            Server server = new Server(3500, 3501, 3502);
             server.Run();
 
             while (true)

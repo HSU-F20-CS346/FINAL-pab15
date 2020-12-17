@@ -21,7 +21,7 @@ namespace Client
             Port = _Port;
         }
 
-        public void InitiateExchange()
+        public bool InitiateExchange()
         {
             try
             {
@@ -33,7 +33,7 @@ namespace Client
                     BinaryWriter writer = new BinaryWriter(stream);
 
                     // Write Our Partial Key
-                    byte[] PubGenKey = Encoding.UTF8.GetBytes(Client.ClientKeyManager.PublicGeneratedKey.ToString());
+                    byte[] PubGenKey = Encoding.UTF8.GetBytes(Client.Tracker.KeyManager.PublicGeneratedKey.ToString());
                     writer.Write(IPAddress.HostToNetworkOrder(PubGenKey.Length));
                     writer.Write(PubGenKey);
                     writer.Flush();
@@ -43,22 +43,20 @@ namespace Client
                     byte[] ServerKey = reader.ReadBytes(ServerKeyLength);
 
                     // Generate Shared Key
-                    Client.ClientKeyManager.HostGeneratedKey = BigInteger.Parse(Encoding.UTF8.GetString(ServerKey));
-                    Client.ClientKeyManager.ComputeSharedKey();
-                    Client.ClientMSG(Client.ClientKeyManager.SharedSecretKey.ToString() + "\n\n");
-
+                    Client.Tracker.KeyManager.HostGeneratedKey = BigInteger.Parse(Encoding.UTF8.GetString(ServerKey));
+                    Client.Tracker.KeyManager.ComputeSharedKey();
 
                     // Get Init Packet And Print To AesIV Screen
                     int PacketBytesLength = IPAddress.NetworkToHostOrder(reader.ReadInt32());
                     byte[] PacketBytes = reader.ReadBytes(PacketBytesLength);
                     InitPacket initPacket = new InitPacket(PacketBytes);
-                    Client.ClientKeyManager.AesIV = initPacket.AesIV;
-                    Client.ClientMSG(Encoding.UTF8.GetString(initPacket.AesIV));
+                    Client.Tracker.KeyManager.AesIV = initPacket.AesIV;
+                    return true;
                 }
             }
             catch (Exception ex)
             {
-
+                return false;
             }
         }
     }
